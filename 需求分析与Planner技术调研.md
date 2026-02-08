@@ -368,4 +368,79 @@ Verifier（质量/合规/人设/AI 痕迹/投流适配）
 Training-Free：session → 筛选 → 奖励评估 → 优势提取 → 写入经验库（供意图/规划检索）
 ```
 
-以上内容可直接用于选型与架构设计；若与现有 [技术调研.md](技术调研.md) 合并为同一文档的续章，可将本文「一」至「六」分别对应第十三章（需求分析与意图理解）、第十四章（Planner）、第十五章（高准确率与模型选型）、第十六章（Cursor/编程能力）、交叉引用与数据流，并统一链接索引。
+---
+
+## 七、项目结构设计（开发框架）
+
+在 `marketinghelper` 根目录下，与现有 Markdown 文档并列的可运行代码骨架布局如下，与上文数据流、Planner 及意图输出约定一致。
+
+### 7.1 目录与模块
+
+```text
+marketinghelper/
+  src/
+    xhs_assistant/           # 主包
+      __init__.py
+      intent/                # 意图理解
+        __init__.py
+        schema.py            # IntentOutput, Slots, 意图类型枚举
+        service.py           # 意图识别服务（LLM 结构化输出 / 槽位补全）
+      fulfillability/        # 可执行性检查
+        __init__.py
+        schema.py            # FulfillabilityResult
+        service.py           # 法规/技术/成本检查
+      planner/               # 规划
+        __init__.py
+        schema.py            # Plan, Step, Agent 枚举
+        graph.py             # LangGraph: plan_node, execute_node, replan_node, 条件边
+      agents/                # 五类 Agent 执行层
+        __init__.py
+        registry.py          # agent 名称 → 可调用实现
+        account_strategy.py  # 账号战略（占位）
+        topic_planning.py    # 选题策划（占位）
+        content_generation.py# 内容生成（占位）
+        ads_planning.py      # 投流（占位）
+        content_eval.py      # 内容评估与检验（占位）
+      verifier/              # Verifier
+        __init__.py
+        service.py           # 质量/合规/人设校验，输出 pass + 修改建议
+      shared/                # 共享类型与配置
+        __init__.py
+        state.py             # WorkspaceState（账号上下文、plan、past_steps、当前产出）
+        config.py            # 运行时配置（LLM、向量库、平台开关）
+  api/                       # FastAPI 入口
+    __init__.py
+    main.py                  # POST /intent、/fulfillability、/planner/run 等分阶段
+  tests/
+    __init__.py
+    test_intent_schema.py
+    test_planner_graph.py
+  pyproject.toml             # 项目元数据与依赖
+  requirements.txt           # 运行时依赖
+  README_DEV.md              # 开发框架说明与运行方式
+```
+
+### 7.2 依赖与接口约定
+
+- **依赖**（与调研一致）：`langgraph`、`langchain-core`、`langchain-openai`（或 `langchain-community` 多模型）、`pydantic>=2`、`fastapi`、`uvicorn`；可选 `chroma-hnswlib` 或 `qdrant-client` 用于 RAG/经验库。
+- **接口约定**：意图输出与 Planner 输入严格对齐本文与 [意图识别与Planner示例.md](意图识别与Planner示例.md) 中的 JSON 字段（`demand_summary`、`intent_type`、`slots`、`needs_clarification`、`clarification_question`；`steps[].step_id`、`agent`、`input_summary`、`depends_on`、`acceptance_criteria`）。
+
+### 7.3 关键类型与接口摘要
+
+| 模块 | 核心类型 / 接口 | 说明 |
+| --- | --- | --- |
+| intent | `IntentOutput`, `Slots` | Pydantic 模型；IntentOutput 含 demand_summary, intent_type, slots, needs_clarification, clarification_question, suggested_agents |
+| intent | `IntentService.run(user_input, account_context) -> IntentOutput` | 返回结构化意图；缺槽时 needs_clarification=True |
+| fulfillability | `FulfillabilityResult` | can_fulfill, reason, message_to_user, alternative, transfer_to_human, blocked_step |
+| fulfillability | `FulfillabilityService.check(intent_output, account_context) -> FulfillabilityResult` | 意图后调用，不通过则不进入 Planner |
+| planner | `Plan`, `Step` | Step: step_id, agent, input_summary, depends_on, acceptance_criteria |
+| planner | `WorkspaceState` | 含 input, plan, past_steps, response, account_context；LangGraph 状态 |
+| planner | LangGraph: `plan_node`, `execute_node`, `replan_node`, 条件边 `should_end` | 与本文第六章数据流一致 |
+| agents | `AGENT_REGISTRY` / `run_agent` | agent 名称 → 执行函数；执行函数接收 (step, state) 返回该步产出 |
+| verifier | `VerifierService.verify(artifact, criteria) -> pass + suggestions` | 产出通过则继续，不通过则 Replan |
+
+开发与运行说明见 [README_DEV.md](README_DEV.md)。
+
+---
+
+以上内容可直接用于选型与架构设计；若与现有 [技术调研.md](技术调研.md) 合并为同一文档的续章，可将本文「一」至「七」分别对应第十三章（需求分析与意图理解）、第十四章（Planner）、第十五章（高准确率与模型选型）、第十六章（Cursor/编程能力）、交叉引用、数据流与项目结构，并统一链接索引。
