@@ -13,16 +13,16 @@ interface PillsProps {
 
 export function Pills({ active = null, onSelect }: PillsProps) {
   return (
-    <div className="flex flex-wrap justify-center gap-2">
+    <div className="flex flex-wrap justify-center gap-2.5">
       {PILLS.map(({ label, id }) => (
         <button
           key={id}
           type="button"
           onClick={() => onSelect?.(id)}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+          className={`px-5 py-2.5 rounded-[var(--radius-full)] text-sm font-medium transition-all duration-200 ${
             active === id
-              ? "bg-neutral-900 text-white"
-              : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+              ? "bg-[var(--color-accent)] text-white shadow-[var(--shadow-sm)]"
+              : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] hover:text-[var(--color-text)]"
           }`}
         >
           {label}
