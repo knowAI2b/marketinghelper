@@ -82,6 +82,24 @@ def post_planner_run(req: PlannerRunRequest) -> dict[str, Any]:
     return result
 
 
+@app.get("/")
+def root() -> dict[str, Any]:
+    """根路径：说明为 API 服务，Web 界面请访问前端地址。"""
+    return {
+        "message": "小红书助手 API",
+        "docs": "/docs",
+        "health": "/health",
+        "web_ui": "http://localhost:8000",
+    }
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    """避免浏览器请求 favicon 时返回 404。"""
+    from fastapi.responses import Response
+    return Response(status_code=204)
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     """健康检查。"""
