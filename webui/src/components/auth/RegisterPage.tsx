@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { postLogin, postRegister } from "../../api/client"
 import { useAuth } from "../../contexts/AuthContext"
+import { AuthIllustration } from "../ui/Illustrations"
 
 export function RegisterPage() {
   const navigate = useNavigate()
@@ -38,6 +39,7 @@ export function RegisterPage() {
 
   return (
     <div className="max-w-sm mx-auto px-4 py-12">
+      <AuthIllustration />
       <h1 className="text-2xl font-semibold text-neutral-900 mb-6">注册</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { useState } from "react"
 import { useAuth } from "../../contexts/AuthContext"
 import { postLogout } from "../../api/client"
+import { LogoMark } from "../ui/LogoMark"
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -24,7 +25,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-neutral-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
-        <Link to="/" className="font-semibold text-lg text-neutral-900">
+        <Link to="/" className="flex items-center gap-2 font-semibold text-lg text-neutral-900">
+          <LogoMark />
           小红书助手
         </Link>
 
