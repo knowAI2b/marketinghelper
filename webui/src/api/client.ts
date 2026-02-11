@@ -15,7 +15,14 @@ async function post<T>(path: string, body: object): Promise<T> {
   })
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`API ${path}: ${res.status} ${text}`)
+    let msg = text || `请求失败 ${res.status}`
+    try {
+      const j = JSON.parse(text) as { detail?: string }
+      if (typeof j.detail === "string") msg = j.detail
+    } catch {
+      /* 非 JSON 时用 text */
+    }
+    throw new Error(msg)
   }
   return res.json() as Promise<T>
 }
@@ -56,4 +63,53 @@ export async function getHealth(): Promise<{ status: string }> {
   const res = await fetch(`${API_BASE}/health`)
   if (!res.ok) throw new Error(`Health: ${res.status}`)
   return res.json() as Promise<{ status: string }>
+}
+
+// ---------- 认证 ----------
+
+export interface RegisterRes {
+  ok: boolean
+  message?: string
+}
+
+export interface LoginRes {
+  ok: boolean
+  token: string
+  username: string
+}
+
+export interface LogoutRes {
+  ok: boolean
+}
+
+export interface MeRes {
+  id: number
+  username: string
+  created_at: string
+}
+
+export async function postRegister(
+  username: string,
+  password: string
+): Promise<RegisterRes> {
+  return post<RegisterRes>("/auth/register", { username, password })
+}
+
+export async function postLogin(
+  username: string,
+  password: string
+): Promise<LoginRes> {
+  return post<LoginRes>("/auth/login", { username, password })
+}
+
+export async function postLogout(token: string): Promise<LogoutRes> {
+  return post<LogoutRes>("/auth/logout", { token })
+}
+
+export async function getMe(token: string): Promise<MeRes> {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error("未登录或 token 已过期")
+  return res.json() as Promise<MeRes>
 }

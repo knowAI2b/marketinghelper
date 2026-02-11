@@ -1,15 +1,18 @@
-"""FastAPI 入口：POST /intent、/fulfillability、/planner/run。"""
+"""FastAPI 入口：POST /intent、/fulfillability、/planner/run；认证 /auth/register、/auth/login。"""
 from __future__ import annotations
 
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from api.auth_db import get_user_by_token, init_db, login as auth_login, logout as auth_logout, register as auth_register
 from xhs_assistant.fulfillability.service import FulfillabilityService
 from xhs_assistant.intent.service import IntentService
 from xhs_assistant.planner.graph import build_workflow
+
+init_db()
 
 app = FastAPI(title="小红书助手 API", version="0.1.0")
 
@@ -83,6 +86,62 @@ def post_planner_run(req: PlannerRunRequest) -> dict[str, Any]:
 def health() -> dict[str, str]:
     """健康检查。"""
     return {"status": "ok"}
+
+
+# ---------- 认证 ----------
+
+class RegisterRequest(BaseModel):
+    username: str = Field(description="用户名")
+    password: str = Field(description="密码")
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(description="用户名")
+    password: str = Field(description="密码")
+
+
+@app.post("/auth/register")
+def post_register(req: RegisterRequest) -> dict[str, Any]:
+    """注册。"""
+    ok, msg = auth_register(req.username, req.password)
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    return {"ok": True, "message": "注册成功"}
+
+
+@app.post("/auth/login")
+def post_login(req: LoginRequest) -> dict[str, Any]:
+    """登录，返回 token 与用户名。"""
+    ok, msg, token = auth_login(req.username, req.password)
+    if not ok:
+        raise HTTPException(status_code=401, detail=msg)
+    user = get_user_by_token(token)
+    return {"ok": True, "token": token, "username": user["username"]}
+
+
+class LogoutRequest(BaseModel):
+    token: str = Field(description="登录时返回的 token")
+
+
+@app.post("/auth/logout")
+def post_logout(req: LogoutRequest) -> dict[str, Any]:
+    """登出。"""
+    auth_logout(req.token)
+    return {"ok": True}
+
+
+@app.get("/auth/me")
+def get_me(authorization: str | None = None) -> dict[str, Any]:
+    """根据 Authorization: Bearer <token> 返回当前用户，无效返回 401。"""
+    token = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization[7:].strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="未提供 token")
+    user = get_user_by_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="token 无效或已过期")
+    return {"id": user["id"], "username": user["username"], "created_at": user["created_at"]}
 
 
 if __name__ == "__main__":
