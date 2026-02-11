@@ -1,8 +1,25 @@
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { useState } from "react"
+import { useAuth } from "../../contexts/AuthContext"
+import { postLogout } from "../../api/client"
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const { isLoggedIn, username, token, clearAuth } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    if (token) {
+      try {
+        await postLogout(token)
+      } catch {
+        // 忽略网络错误，本地仍清除
+      }
+      clearAuth()
+      setMenuOpen(false)
+      navigate("/")
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-neutral-100">
@@ -25,7 +42,33 @@ export function Header() {
           >
             用户信息
           </Link>
-          <span className="text-neutral-400 cursor-default">登录</span>
+          {isLoggedIn ? (
+            <>
+              <span className="text-neutral-700">{username}</span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+              >
+                登出
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+              >
+                登录
+              </Link>
+              <Link
+                to="/register"
+                className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+              >
+                注册
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* Mobile menu button */}
@@ -62,7 +105,35 @@ export function Header() {
           >
             用户信息
           </Link>
-          <span className="text-neutral-400 cursor-default">登录</span>
+          {isLoggedIn ? (
+            <>
+              <span className="text-neutral-700">{username}</span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-left text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+              >
+                登出
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                onClick={() => setMenuOpen(false)}
+                className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+              >
+                登录
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setMenuOpen(false)}
+                className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+              >
+                注册
+              </Link>
+            </>
+          )}
         </div>
       )}
     </header>
