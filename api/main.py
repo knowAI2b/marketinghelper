@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from xhs_assistant.fulfillability.service import FulfillabilityService
@@ -11,6 +12,14 @@ from xhs_assistant.intent.service import IntentService
 from xhs_assistant.planner.graph import build_workflow
 
 app = FastAPI(title="小红书助手 API", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 intent_service = IntentService()
 fulfillability_service = FulfillabilityService()
@@ -79,4 +88,4 @@ def health() -> dict[str, str]:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=5173)

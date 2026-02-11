@@ -55,7 +55,7 @@ pytest tests/ -v
 ### 启动 API
 
 ```bash
-uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn api.main:app --reload --host 0.0.0.0 --port 5173
 ```
 
 - `POST /intent`：请求体 `{"user_input": "帮我起个美妆账号", "account_context": {}}`

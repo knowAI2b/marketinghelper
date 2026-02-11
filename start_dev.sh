@@ -32,5 +32,5 @@ echo "[start_dev.sh] 项目根目录：$PROJECT_ROOT"
 pip install -e ".[dev]"
 
 # 4. 启动 FastAPI 开发服务
-exec uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+exec uvicorn api.main:app --reload --host 0.0.0.0 --port 5173
 
