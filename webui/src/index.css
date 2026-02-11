@@ -1,10 +1,40 @@
 @import "tailwindcss";
 
+/* 设计令牌（便于与 Figma 等设计稿对齐） */
+:root {
+  /* 品牌与语义色 */
+  --color-accent: #e63946;
+  --color-accent-hover: #c1121f;
+  --color-accent-muted: #fce4ec;
+  /* 中性色 */
+  --color-text: #171717;
+  --color-text-secondary: #525252;
+  --color-text-muted: #a3a3a3;
+  --color-border: #e5e5e5;
+  --color-border-hover: #d4d4d4;
+  --color-surface: #fafafa;
+  --color-surface-elevated: #ffffff;
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-full: 9999px;
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-focus: 0 0 0 3px var(--color-accent-muted);
+  /* 动效 */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+}
+
 :root {
   font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #1a1a1a;
+  color: var(--color-text);
   background-color: #ffffff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -15,4 +45,30 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+}
+
+/* 标题字间距 */
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+}
+
+/* 使用设计令牌的 utility（便于与 Figma 保持一致） */
+.btn-accent {
+  background-color: var(--color-accent);
+  color: white;
+  transition: background-color var(--transition-normal);
+}
+.btn-accent:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+}
+.focus-ring-accent:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-color: var(--color-accent);
+}
+.card-shadow {
+  box-shadow: var(--shadow-sm);
+}
+.card-shadow-hover:hover {
+  box-shadow: var(--shadow-md);
 }

@@ -16,13 +16,13 @@ export function SessionResult({
   return (
     <div className="space-y-6">
       {intentOutput && (
-        <section className="rounded-xl border border-neutral-200 bg-white p-4">
-          <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-2">
+        <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 card-shadow">
+          <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-2">
             需求理解
           </h3>
-          <p className="text-neutral-900">{intentOutput.demand_summary}</p>
+          <p className="text-[var(--color-text)]">{intentOutput.demand_summary}</p>
           {intentOutput.suggested_agents?.length > 0 && (
-            <p className="mt-2 text-sm text-neutral-600">
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
               建议流程：{intentOutput.suggested_agents.join(" → ")}
             </p>
           )}
@@ -30,19 +30,19 @@ export function SessionResult({
       )}
 
       {planSteps.length > 0 && (
-        <section className="rounded-xl border border-neutral-200 bg-white p-4">
-          <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-3">
+        <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 card-shadow">
+          <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
             执行计划
           </h3>
           <ol className="space-y-3">
             {planSteps.map((s, i) => (
               <li key={s.step_id} className="flex gap-3">
-                <span className="shrink-0 w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center text-xs font-medium text-neutral-600">
+                <span className="shrink-0 w-7 h-7 rounded-full bg-[var(--color-accent-muted)] text-[var(--color-accent)] flex items-center justify-center text-xs font-semibold">
                   {i + 1}
                 </span>
                 <div>
-                  <p className="font-medium text-neutral-900">{s.agent}</p>
-                  <p className="text-sm text-neutral-600">{s.input_summary}</p>
+                  <p className="font-medium text-[var(--color-text)]">{s.agent}</p>
+                  <p className="text-sm text-[var(--color-text-secondary)]">{s.input_summary}</p>
                 </div>
               </li>
             ))}
@@ -51,15 +51,15 @@ export function SessionResult({
       )}
 
       {pastSteps.length > 0 && (
-        <section className="rounded-xl border border-neutral-200 bg-white p-4">
-          <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-3">
+        <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 card-shadow">
+          <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
             执行结果
           </h3>
           <div className="space-y-4">
             {pastSteps.map(([step, result], i) => (
-              <div key={step.step_id ?? i} className="border-l-2 border-neutral-200 pl-4">
-                <p className="font-medium text-neutral-900">{result.agent}</p>
-                <p className="text-sm text-neutral-600 whitespace-pre-wrap mt-1">
+              <div key={step.step_id ?? i} className="border-l-2 border-[var(--color-border)] pl-4">
+                <p className="font-medium text-[var(--color-text)]">{result.agent}</p>
+                <p className="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap mt-1">
                   {result.output}
                 </p>
               </div>
@@ -69,11 +69,11 @@ export function SessionResult({
       )}
 
       {response && (
-        <section className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-          <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-2">
+        <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 card-shadow">
+          <h3 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-2">
             完成
           </h3>
-          <p className="text-neutral-900">{response}</p>
+          <p className="text-[var(--color-text)]">{response}</p>
         </section>
       )}
     </div>

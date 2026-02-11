@@ -23,34 +23,37 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-neutral-100">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
-        <Link to="/" className="flex items-center gap-2 font-semibold text-lg text-neutral-900">
+    <header className="sticky top-0 z-50 bg-white/98 backdrop-blur-sm border-b border-[var(--color-border)]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+        <Link
+          to="/"
+          className="flex items-center gap-2.5 font-semibold text-lg text-[var(--color-text)] transition-opacity hover:opacity-90"
+        >
           <LogoMark />
           小红书助手
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden sm:flex items-center gap-6 text-sm">
+        <nav className="hidden sm:flex items-center gap-8 text-sm">
           <Link
             to="/"
-            className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+            className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors duration-200 underline-offset-4 hover:underline"
           >
             首页
           </Link>
           <Link
             to="/account"
-            className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+            className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors duration-200 underline-offset-4 hover:underline"
           >
             用户信息
           </Link>
           {isLoggedIn ? (
             <>
-              <span className="text-neutral-700">{username}</span>
+              <span className="text-[var(--color-text-secondary)] font-medium">{username}</span>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors duration-200 underline-offset-4 hover:underline"
               >
                 登出
               </button>
@@ -59,13 +62,13 @@ export function Header() {
             <>
               <Link
                 to="/login"
-                className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors duration-200 underline-offset-4 hover:underline"
               >
                 登录
               </Link>
               <Link
                 to="/register"
-                className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors duration-200 underline-offset-4 hover:underline"
               >
                 注册
               </Link>
@@ -76,7 +79,7 @@ export function Header() {
         {/* Mobile menu button */}
         <button
           type="button"
-          className="sm:hidden p-2 rounded-md text-neutral-600 hover:bg-neutral-100"
+          className="sm:hidden p-2 rounded-[var(--radius-md)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
           onClick={() => setMenuOpen((o) => !o)}
           aria-label="菜单"
         >
@@ -92,28 +95,28 @@ export function Header() {
 
       {/* Mobile nav dropdown */}
       {menuOpen && (
-        <div className="sm:hidden border-t border-neutral-100 bg-white px-4 py-3 flex flex-col gap-2">
+        <div className="sm:hidden border-t border-[var(--color-border)] bg-white px-4 py-3 flex flex-col gap-1">
           <Link
             to="/"
             onClick={() => setMenuOpen(false)}
-            className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+            className="py-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
           >
             首页
           </Link>
           <Link
             to="/account"
             onClick={() => setMenuOpen(false)}
-            className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+            className="py-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
           >
             用户信息
           </Link>
           {isLoggedIn ? (
             <>
-              <span className="text-neutral-700">{username}</span>
+              <span className="py-2 text-[var(--color-text-secondary)] font-medium">{username}</span>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="text-left text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+                className="text-left py-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
               >
                 登出
               </button>
@@ -123,14 +126,14 @@ export function Header() {
               <Link
                 to="/login"
                 onClick={() => setMenuOpen(false)}
-                className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+                className="py-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
               >
                 登录
               </Link>
               <Link
                 to="/register"
                 onClick={() => setMenuOpen(false)}
-                className="text-neutral-600 hover:text-neutral-900 hover:underline underline-offset-4"
+                className="py-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
               >
                 注册
               </Link>

@@ -82,12 +82,12 @@ export function SessionPage() {
 
   if (!userInput.trim()) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-12 text-center">
-        <p className="text-neutral-600 mb-4">未收到输入，请从首页提交需求。</p>
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <p className="text-[var(--color-text-secondary)] mb-4">未收到输入，请从首页提交需求。</p>
         <button
           type="button"
           onClick={() => navigate("/")}
-          className="text-neutral-900 font-medium hover:underline"
+          className="text-[var(--color-accent)] font-medium hover:underline underline-offset-4"
         >
           返回首页
         </button>
@@ -98,26 +98,26 @@ export function SessionPage() {
   const isLoading = step === "intent" || step === "fulfillability" || step === "running"
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="max-w-3xl mx-auto px-4 py-10">
       <div className="mb-6 flex items-center gap-4">
         <button
           type="button"
           onClick={() => navigate("/")}
-          className="text-neutral-600 hover:text-neutral-900 text-sm font-medium"
+          className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] text-sm font-medium transition-colors"
         >
           ← 返回首页
         </button>
       </div>
 
-      <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 mb-6">
-        <p className="text-sm text-neutral-500 mb-1">您的需求</p>
-        <p className="text-neutral-900 whitespace-pre-wrap">{userInput}</p>
+      <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 mb-6 card-shadow">
+        <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)] mb-1.5">您的需求</p>
+        <p className="text-[var(--color-text)] whitespace-pre-wrap">{userInput}</p>
       </div>
 
       {isLoading && (
-        <div className="flex items-center gap-2 text-neutral-600 mb-6">
-          <span className="inline-block w-5 h-5 border-2 border-neutral-300 border-t-neutral-600 rounded-full animate-spin" />
-          <span>
+        <div className="flex items-center gap-3 text-[var(--color-text-secondary)] mb-6">
+          <span className="inline-block w-5 h-5 border-2 border-[var(--color-border)] border-t-[var(--color-accent)] rounded-full animate-spin" />
+          <span className="text-sm">
             {step === "intent" && "理解意图…"}
             {step === "fulfillability" && "检查可执行性…"}
             {step === "running" && "规划与执行…"}
@@ -126,19 +126,19 @@ export function SessionPage() {
       )}
 
       {step === "clarify" && intentOutput?.clarification_question && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-6">
+        <div className="rounded-[var(--radius-lg)] border border-amber-200 bg-amber-50/80 p-5 mb-6">
           <p className="text-sm font-medium text-amber-800 mb-2">请补充信息</p>
           <p className="text-amber-900 mb-4">{intentOutput.clarification_question}</p>
           <textarea
             value={clarificationAnswer}
             onChange={(e) => setClarificationAnswer(e.target.value)}
             placeholder="在此补充…"
-            className="w-full min-h-[80px] px-3 py-2 rounded-lg border border-amber-200 bg-white text-neutral-900"
+            className="w-full min-h-[88px] px-3 py-2.5 rounded-[var(--radius-md)] border border-amber-200 bg-white text-[var(--color-text)] focus-ring-accent focus:outline-none transition-shadow"
           />
           <button
             type="button"
             onClick={handleClarificationSubmit}
-            className="mt-2 px-4 py-2 rounded-lg bg-amber-600 text-white font-medium hover:bg-amber-700"
+            className="btn-accent mt-3 px-4 py-2.5 rounded-[var(--radius-md)] font-medium"
           >
             提交
           </button>
@@ -146,8 +146,8 @@ export function SessionPage() {
       )}
 
       {step === "done" && fulfillabilityMessage && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 mb-6">
-          <p className="text-red-800">{fulfillabilityMessage}</p>
+        <div className="rounded-[var(--radius-lg)] border border-red-200 bg-red-50/80 p-5 mb-6">
+          <p className="text-red-800 text-sm">{fulfillabilityMessage}</p>
         </div>
       )}
 
@@ -161,7 +161,7 @@ export function SessionPage() {
       )}
 
       {step === "error" && error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
+        <div className="rounded-[var(--radius-lg)] border border-red-200 bg-red-50/80 p-5 text-red-800 text-sm">
           {error}
         </div>
       )}

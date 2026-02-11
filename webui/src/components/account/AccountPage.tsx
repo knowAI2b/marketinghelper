@@ -62,29 +62,29 @@ export function AccountPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-semibold text-neutral-900 mb-6">用户信息管理</h1>
+    <div className="max-w-2xl mx-auto px-4 py-10">
+      <h1 className="text-2xl font-semibold text-[var(--color-text)] mb-8">用户信息管理</h1>
 
       <div className="space-y-8">
-        <section className="rounded-xl border border-neutral-200 bg-white p-6">
-          <h2 className="text-lg font-medium text-neutral-900 mb-4">基础信息</h2>
+        <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 card-shadow">
+          <h2 className="text-lg font-medium text-[var(--color-text)] mb-4">基础信息</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-600 mb-1">行业</label>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">行业</label>
               <input
                 type="text"
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value)}
                 placeholder="如：美妆、母婴、装修"
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-neutral-900"
+                className="w-full px-3 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus-ring-accent focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-600 mb-1">账号目标</label>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">账号目标</label>
               <select
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-neutral-900"
+                className="w-full px-3 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white text-[var(--color-text)] focus-ring-accent focus:outline-none"
               >
                 {GOAL_OPTIONS.map((o) => (
                   <option key={o.value || "empty"} value={o.value}>
@@ -96,25 +96,25 @@ export function AccountPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-neutral-200 bg-white p-6">
-          <h2 className="text-lg font-medium text-neutral-900 mb-4">人设与阶段</h2>
+        <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 card-shadow">
+          <h2 className="text-lg font-medium text-[var(--color-text)] mb-4">人设与阶段</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-600 mb-1">人设（3 句话内）</label>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">人设（3 句话内）</label>
               <textarea
                 value={persona}
                 onChange={(e) => setPersona(e.target.value)}
                 placeholder="用 3 句话描述账号人设与表达风格"
                 rows={3}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-neutral-900"
+                className="w-full px-3 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus-ring-accent focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-600 mb-1">账号阶段</label>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">账号阶段</label>
               <select
                 value={accountStage}
                 onChange={(e) => setAccountStage(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-neutral-900"
+                className="w-full px-3 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white text-[var(--color-text)] focus-ring-accent focus:outline-none"
               >
                 {STAGE_OPTIONS.map((o) => (
                   <option key={o.value || "empty"} value={o.value}>
@@ -126,43 +126,43 @@ export function AccountPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-neutral-200 bg-white p-6">
-          <h2 className="text-lg font-medium text-neutral-900 mb-4">内容与标签</h2>
+        <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 card-shadow">
+          <h2 className="text-lg font-medium text-[var(--color-text)] mb-4">内容与标签</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-600 mb-1">近期内容摘要</label>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">近期内容摘要</label>
               <textarea
                 value={contentSummary}
                 onChange={(e) => setContentSummary(e.target.value)}
                 placeholder="最近笔记主题或摘要"
                 rows={2}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-neutral-900"
+                className="w-full px-3 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus-ring-accent focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-600 mb-1">常用标签</label>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">常用标签</label>
               <input
                 type="text"
                 value={recentTags}
                 onChange={(e) => setRecentTags(e.target.value)}
                 placeholder="用顿号或逗号分隔，如：好物分享、测评"
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-neutral-900"
+                className="w-full px-3 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus-ring-accent focus:outline-none"
               />
             </div>
           </div>
         </section>
 
-        <section className="rounded-xl border border-neutral-200 bg-white p-6">
-          <h2 className="text-lg font-medium text-neutral-900 mb-4">投流与资质</h2>
-          <div className="flex items-center gap-2">
+        <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 card-shadow">
+          <h2 className="text-lg font-medium text-[var(--color-text)] mb-4">投流与资质</h2>
+          <div className="flex items-center gap-3">
             <input
               type="checkbox"
               id="ads_qualified"
               checked={adsQualified}
               onChange={(e) => setAdsQualified(e.target.checked)}
-              className="w-4 h-4 rounded border-neutral-300"
+              className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-accent)] focus:ring-[var(--color-accent-muted)]"
             />
-            <label htmlFor="ads_qualified" className="text-sm text-neutral-700">
+            <label htmlFor="ads_qualified" className="text-sm text-[var(--color-text-secondary)]">
               已具备小红书官方投流资质（报白/开户）
             </label>
           </div>
@@ -172,7 +172,7 @@ export function AccountPage() {
           <button
             type="button"
             onClick={handleSave}
-            className="px-6 py-2.5 rounded-xl bg-neutral-900 text-white font-medium hover:bg-neutral-800"
+            className="btn-accent px-6 py-3 rounded-[var(--radius-lg)] font-medium"
           >
             保存
           </button>

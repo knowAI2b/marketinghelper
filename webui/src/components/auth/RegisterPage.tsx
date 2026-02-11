@@ -41,9 +41,9 @@ export function RegisterPage() {
     <div className="max-w-sm mx-auto px-4 py-12">
       <AuthIllustration />
       <h1 className="text-2xl font-semibold text-neutral-900 mb-6">注册</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-neutral-600 mb-1">
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
             用户名
           </label>
           <input
@@ -52,11 +52,11 @@ export function RegisterPage() {
             onChange={(e) => setUsername(e.target.value)}
             required
             autoComplete="username"
-            className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-neutral-900"
+            className="w-full px-3 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white text-[var(--color-text)] focus-ring-accent focus:outline-none transition-shadow"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-600 mb-1">
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
             密码（至少 6 位）
           </label>
           <input
@@ -66,11 +66,11 @@ export function RegisterPage() {
             required
             minLength={6}
             autoComplete="new-password"
-            className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-neutral-900"
+            className="w-full px-3 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white text-[var(--color-text)] focus-ring-accent focus:outline-none transition-shadow"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-600 mb-1">
+          <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">
             确认密码
           </label>
           <input
@@ -80,7 +80,7 @@ export function RegisterPage() {
             required
             minLength={6}
             autoComplete="new-password"
-            className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-neutral-900"
+            className="w-full px-3 py-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white text-[var(--color-text)] focus-ring-accent focus:outline-none transition-shadow"
           />
         </div>
         {error && (
@@ -89,14 +89,14 @@ export function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 rounded-xl bg-neutral-900 text-white font-medium hover:bg-neutral-800 disabled:opacity-50"
+          className="btn-accent w-full py-3 rounded-[var(--radius-lg)] font-medium disabled:opacity-50"
         >
           {loading ? "注册中…" : "注册"}
         </button>
       </form>
-      <p className="mt-4 text-sm text-neutral-600 text-center">
+      <p className="mt-6 text-sm text-[var(--color-text-secondary)] text-center">
         已有账号？{" "}
-        <Link to="/login" className="text-neutral-900 font-medium hover:underline">
+        <Link to="/login" className="text-[var(--color-accent)] font-medium hover:underline underline-offset-2">
           登录
         </Link>
       </p>
