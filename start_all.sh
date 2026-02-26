@@ -28,7 +28,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 echo "[start_all] 启动后端 API (port 5173)..."
-python -m uvicorn api.main:app --reload --host 0.0.0.0 --port 5173 &
+$HOME/miniconda3/envs/py310/bin/python -m uvicorn api.main:app --reload --host 0.0.0.0 --port 5173 &
 BACKEND_PID=$!
 sleep 2
 
