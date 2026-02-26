@@ -3,11 +3,18 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, Header, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from api.auth_db import get_user_by_token, init_db, login as auth_login, logout as auth_logout, register as auth_register
+from api.auth_db import (
+    get_user_by_token,
+    init_db,
+    login as auth_login,
+    logout as auth_logout,
+    register as auth_register,
+    save_uploaded_image_bytes,
+)
 from xhs_assistant.fulfillability.service import FulfillabilityService
 from xhs_assistant.intent.service import IntentService
 from xhs_assistant.planner.graph import build_workflow
@@ -160,6 +167,32 @@ def get_me(authorization: str | None = None) -> dict[str, Any]:
     if not user:
         raise HTTPException(status_code=401, detail="token 无效或已过期")
     return {"id": user["id"], "username": user["username"], "created_at": user["created_at"]}
+
+
+@app.post("/upload/image")
+async def upload_image(
+    file: UploadFile = File(...),
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    """上传单张图片，落盘到 data/uploads/yyyy/mm/dd 并写入 uploaded_images 表。"""
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="仅支持上传图片")
+
+    user_id: int | None = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization[7:].strip()
+        user = get_user_by_token(token)
+        if user:
+            user_id = int(user["id"])
+
+    data = await file.read()
+    info = save_uploaded_image_bytes(
+        data=data,
+        original_name=file.filename or "",
+        content_type=file.content_type,
+        user_id=user_id,
+    )
+    return {"ok": True, "image": info}
 
 
 if __name__ == "__main__":

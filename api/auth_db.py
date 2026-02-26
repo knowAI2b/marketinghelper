@@ -10,6 +10,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DB_DIR = PROJECT_ROOT / "data"
 DB_PATH = DB_DIR / "auth.db"
+UPLOAD_ROOT = DB_DIR / "uploads"
 
 PBKDF2_ITERATIONS = 100_000
 
@@ -47,7 +48,7 @@ def _get_conn() -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    """创建 users 与 sessions 表。"""
+    """创建 users / sessions / uploaded_images 等表。"""
     conn = _get_conn()
     try:
         conn.executescript("""
@@ -64,10 +65,78 @@ def init_db() -> None:
                 FOREIGN KEY (user_id) REFERENCES users(id)
             );
             CREATE INDEX IF NOT EXISTS ix_sessions_user_id ON sessions(user_id);
+
+            CREATE TABLE IF NOT EXISTS uploaded_images (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NULL,
+                path TEXT NOT NULL,  -- 相对路径，如 2026/02/11/uuid.png
+                original_name TEXT,
+                content_type TEXT,
+                size_bytes INTEGER,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            CREATE INDEX IF NOT EXISTS ix_uploaded_images_user_id ON uploaded_images(user_id);
         """)
         conn.commit()
     finally:
         conn.close()
+
+
+def save_uploaded_image_bytes(
+    data: bytes,
+    original_name: str,
+    content_type: str | None,
+    user_id: int | None = None,
+) -> dict:
+    """将上传的图片字节落盘到 data/uploads/{yyyy}/{mm}/{dd}/uuid.ext，并写入 uploaded_images 表。"""
+    from datetime import datetime
+    import uuid
+    import os
+
+    _ensure_db_dir()
+    now = datetime.utcnow()
+    yyyy = f"{now.year:04d}"
+    mm = f"{now.month:02d}"
+    dd = f"{now.day:02d}"
+
+    # 目录：data/uploads/yyyy/mm/dd
+    folder = UPLOAD_ROOT / yyyy / mm / dd
+    folder.mkdir(parents=True, exist_ok=True)
+
+    # 扩展名
+    _, ext = os.path.splitext(original_name or "")
+    ext = (ext or "").lower()
+    if not ext or len(ext) > 10:
+        ext = ".bin"
+
+    filename = f"{uuid.uuid4().hex}{ext}"
+    rel_path = f"{yyyy}/{mm}/{dd}/{filename}"
+    abs_path = folder / filename
+
+    abs_path.write_bytes(data)
+
+    conn = _get_conn()
+    try:
+        cur = conn.execute(
+            """
+            INSERT INTO uploaded_images (user_id, path, original_name, content_type, size_bytes)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (user_id, rel_path, original_name, content_type, len(data)),
+        )
+        conn.commit()
+        image_id = cur.lastrowid
+    finally:
+        conn.close()
+
+    return {
+        "id": image_id,
+        "path": rel_path,
+        "original_name": original_name,
+        "content_type": content_type,
+        "size_bytes": len(data),
+    }
 
 
 def register(username: str, password: str) -> tuple[bool, str]:
