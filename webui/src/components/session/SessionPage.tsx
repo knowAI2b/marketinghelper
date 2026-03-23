@@ -3,12 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom"
 import {
   postIntent,
   postFulfillability,
-  postPlannerRun,
+  postPlannerStream,
+  type SSEStageEvent,
 } from "../../api/client"
+import type { PlannerResult, PlanStep, StepResult } from "../../types/intent"
 import { getAccountContext } from "../../stores/accountContext"
 import { useAuth } from "../../contexts/AuthContext"
 import { XhsPreview } from "../xhs/XhsPreview"
-import type { PlanStep } from "../../types/intent"
 
 // 对话消息类型
 interface ChatMessage {
@@ -21,6 +22,7 @@ interface ChatMessage {
   // UI 状态
   isExpanded?: boolean
   isLoading?: boolean
+  loadingStage?: LoadingStage  // 细化的加载阶段
   hasContent?: boolean  // 是否有实际生成内容
   showPreview?: boolean  // 是否显示小红书预览
   previewMode?: 'pc' | 'mobile'  // 预览模式
@@ -48,6 +50,13 @@ interface ChatMessage {
     }>
     isExpandable?: boolean
   }
+}
+
+// 加载阶段类型
+type LoadingStage = {
+  step: 'planning' | 'agent' | 'complete' | 'error'
+  message: string
+  agent?: string  // 当前执行的 agent 名称
 }
 
 // 生成唯一ID
@@ -304,9 +313,28 @@ function MessageBubble({
         {!isUser && (
           <div className="rounded-2xl rounded-tl-sm bg-[var(--color-surface-elevated)] border border-[var(--color-border)] px-4 py-3">
             {message.isLoading ? (
-              <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
-                <span className="w-4 h-4 border-2 border-[var(--color-border)] border-t-[var(--color-accent)] rounded-full animate-spin" />
-                <span className="text-sm">思考中...</span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
+                  <span className="w-4 h-4 border-2 border-[var(--color-border)] border-t-[var(--color-accent)] rounded-full animate-spin" />
+                  <span className="text-sm font-medium">
+                    {message.loadingStage?.message || "思考中..."}
+                  </span>
+                </div>
+                {/* 进度指示器 - 3个阶段：规划 -> 执行 -> 完成 */}
+                <div className="flex gap-1.5 pl-6">
+                  <div className={`w-2 h-2 rounded-full transition-colors ${
+                    ['planning', 'agent', 'complete'].indexOf(message.loadingStage?.step || 'intent') >= 0
+                      ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border)]'
+                  }`} title="任务规划" />
+                  <div className={`w-2 h-2 rounded-full transition-colors ${
+                    ['agent', 'complete'].indexOf(message.loadingStage?.step || 'intent') >= 0
+                      ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border)]'
+                  }`} title="生成内容" />
+                  <div className={`w-2 h-2 rounded-full transition-colors ${
+                    message.loadingStage?.step === 'complete'
+                      ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border)]'
+                  }`} title="完成" />
+                </div>
               </div>
             ) : (
               <>
@@ -612,6 +640,15 @@ export function SessionPage() {
     setIsProcessing(true)
     setError(null)
 
+    // 辅助函数：更新加载阶段
+    const updateLoadingStage = (stage: LoadingStage) => {
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId
+          ? { ...msg, loadingStage: stage }
+          : msg
+      ))
+    }
+
     try {
       // 合并上下文，包含 session_id 和 is_new_session
       const mergedContext = {
@@ -637,8 +674,11 @@ export function SessionPage() {
         setIsFirstRequest(false)
       }
 
-      // 1. 意图识别
+      // 1. 意图识别（静默执行，直接进入规划阶段显示）
       const intent = await postIntent(userInput, mergedContext)
+
+      // 显示规划中状态
+      updateLoadingStage({ step: 'planning', message: '正在规划任务...' })
 
       // 处理非营销意图
       const nonMarketingResponses: Record<string, string> = {
@@ -684,7 +724,7 @@ export function SessionPage() {
         return
       }
 
-      // 2. 可执行性检查
+      // 2. 可执行性检查（静默执行，不显示进度）
       const fulfillResult = await postFulfillability(intent, mergedContext)
       if (!fulfillResult.can_fulfill) {
         setMessages(prev => prev.map(msg =>
@@ -700,32 +740,60 @@ export function SessionPage() {
         return
       }
 
-      // 3. 执行
-      const plannerResult = await postPlannerRun(intent, mergedContext)
+      // 3. 执行 Planner（流式）
+      let plannerResult: PlannerResult | undefined
+
+      await postPlannerStream(intent, mergedContext, {
+        onStage: (event: SSEStageEvent) => {
+          // 实时更新进度状态
+          // agent 阶段统一显示"正在生成内容..."
+          const message = event.step === 'agent' || event.step === 'step_done'
+            ? '正在生成内容...'
+            : event.message
+          updateLoadingStage({
+            step: event.step === 'step_done' ? 'agent' : event.step,
+            message,
+            agent: event.agent,
+          })
+        },
+        onResult: (result: PlannerResult) => {
+          plannerResult = result
+        },
+        onError: (error: string) => {
+          throw new Error(error)
+        },
+      })
+
+      if (!plannerResult) {
+        throw new Error("未收到执行结果")
+      }
+
+      // 使用断言确保 TypeScript 知道 plannerResult 不为 null
+      const result = plannerResult as PlannerResult
 
       // 提取主要内容
-      const mainContent = (plannerResult.past_steps ?? [])
-        .map(([, result]) => result.output || result.response || "")
+      const mainContent = (result.past_steps ?? [])
+        .map(([, stepResult]: [PlanStep, StepResult]) => stepResult.output || stepResult.response || "")
         .filter(Boolean)
         .join("\n\n")
 
       // 提取图片（合并所有步骤的图片）
       const allImages: string[] = []
-      ;(plannerResult.past_steps ?? []).forEach(([, result]) => {
-        if (result.images && result.images.length > 0) {
-          allImages.push(...result.images)
+      ;(result.past_steps ?? []).forEach(([, stepResult]: [PlanStep, StepResult]) => {
+        if (stepResult.images && stepResult.images.length > 0) {
+          allImages.push(...stepResult.images)
         }
       })
       // 也检查顶层 images 字段
-      if (plannerResult.images && plannerResult.images.length > 0) {
-        allImages.push(...plannerResult.images)
+      if (result.images && result.images.length > 0) {
+        allImages.push(...result.images)
       }
 
       // 提取执行详情
-      const executionDetails = (plannerResult.past_steps ?? []).map(([step, result]) => ({
-        agent: step.agent || result.agent || "未知",
+      const executionDetails = (result.past_steps ?? []).map(([step, stepResult]: [PlanStep, StepResult]) => ({
+        agent: step.agent || stepResult.agent || "未知",
         inputSummary: step.input_summary || "",
-        output: result.output || result.response || "",
+        output: stepResult.output || stepResult.response || "",
       }))
 
       // 判断返回的内容是否只是配图确认信息（而非新内容）
@@ -744,13 +812,13 @@ export function SessionPage() {
           ? {
               ...msg,
               isLoading: false,
-              content: mainContent || plannerResult.response || "执行完成",
+              content: mainContent || result.response || "执行完成",
               images: allImages.length > 0 ? allImages : undefined,
               hasContent: !!mainContent,
               // 标记这条消息是否只是配图响应
               isImageOnlyResponse: isImageOnlyResponse || undefined,
               details: {
-                planSteps: plannerResult.plan?.steps ?? [],
+                planSteps: result.plan?.steps ?? [],
                 executionDetails,
                 isExpandable: executionDetails.length > 0,
               },

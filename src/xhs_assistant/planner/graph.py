@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Literal, TypedDict
+from typing import Any, Callable, Literal, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
@@ -20,6 +20,10 @@ from xhs_assistant.planner.schema import Plan, Step
 from xhs_assistant.shared.config import config
 
 logger = logging.getLogger(__name__)
+
+
+# 进度回调类型
+ProgressCallback = Callable[[str, str, str | None], None]  # step, message, agent
 
 
 class GraphState(TypedDict, total=False):
@@ -267,3 +271,92 @@ async def run_workflow_async(
     }
     result = workflow.invoke(initial)
     return result
+
+
+# ============================================================================
+# 支持进度回调的流式执行
+# ============================================================================
+
+async def run_workflow_with_progress(
+    intent_output: dict[str, Any],
+    account_context: dict[str, Any],
+    on_progress: ProgressCallback | None = None,
+    past_steps: list[Any] | None = None,
+) -> dict[str, Any]:
+    """带进度回调的工作流执行。
+
+    手动分步执行，在每个阶段调用回调通知进度。
+
+    Args:
+        intent_output: 意图识别输出
+        account_context: 账号上下文
+        on_progress: 进度回调函数 (step, message, agent)
+        past_steps: 已完成的步骤（用于续跑）
+
+    Returns:
+        dict: 工作流最终状态
+    """
+    state: dict[str, Any] = {
+        "user_input": intent_output.get("demand_summary", ""),
+        "intent_output": intent_output,
+        "account_context": account_context,
+        "past_steps": past_steps or [],
+    }
+
+    def notify(step: str, message: str, agent: str | None = None):
+        if on_progress:
+            try:
+                on_progress(step, message, agent)
+            except Exception as e:
+                logger.warning(f"Progress callback error: {e}")
+
+    try:
+        # 1. 规划阶段
+        notify("planning", "正在规划任务...")
+        plan_result = await _make_plan_with_backend(intent_output, account_context)
+        state["plan"] = plan_result
+        state["backend_type"] = config.agent_backend.get_effective_backend("planner")
+
+        steps_list = plan_result.get("steps", [])
+        current_past_steps = list(state.get("past_steps", []))
+
+        if not steps_list:
+            notify("complete", "任务规划为空，无需执行")
+            state["response"] = "任务规划为空。"
+            return state
+
+        # 2. 执行阶段 - 逐步执行
+        for i, step_dict in enumerate(steps_list):
+            if isinstance(step_dict, dict):
+                step = step_dict
+            else:
+                step = step_dict.model_dump() if hasattr(step_dict, "model_dump") else step_dict
+
+            agent_name = step.get("agent", "未知服务")
+            notify("agent", f"正在调用 {agent_name} 服务...", agent_name)
+
+            # 执行单个步骤
+            backend_type = state.get("backend_type") or config.agent_backend.get_effective_backend("executor")
+
+            if backend_type == "native":
+                from xhs_assistant.agents.registry import run_agent
+                result = run_agent(agent_name, step, state)
+            else:
+                result = await execute_step_with_backend(step, state)
+
+            current_past_steps.append((step, result))
+            state["past_steps"] = current_past_steps
+
+            # 通知步骤完成
+            notify("step_done", f"{agent_name} 执行完成", agent_name)
+
+        # 3. 完成
+        notify("complete", "任务执行完成")
+        state["response"] = "执行完成。"
+        return state
+
+    except Exception as e:
+        logger.error(f"Workflow execution failed: {e}")
+        notify("error", f"执行失败: {str(e)}")
+        state["response"] = f"执行失败: {str(e)}"
+        return state

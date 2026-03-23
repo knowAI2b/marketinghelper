@@ -236,12 +236,8 @@ class IntentService:
         required_to_check = [name for name in required if name != "content_form"]
         missing: List[str] = [name for name in required_to_check if not slots.get(name)]
 
-        # 如果已有 platform，不再强制要求其他槽位
-        if slots.get("platform"):
-            needs_clarification = False
-            missing = []
-        else:
-            needs_clarification = intent.needs_clarification or bool(missing)
+        # 判断是否需要澄清：缺失必填槽位时需要澄清
+        needs_clarification = intent.needs_clarification or bool(missing)
 
         clarification_question = intent.clarification_question
 
@@ -289,18 +285,55 @@ class IntentService:
     ) -> IntentOutput:
         """在无 LLM 或 LLM 失败时使用的通用占位意图识别。
 
-        不再依赖具体业务短语，而是提供一个安全的、结构化的默认输出：
-        - 将原始输入写入 demand_summary 与 slots["raw_input"]；
-        - 默认按「选题 + 内容生成」的链路处理，供下游 Planner 使用；
-        - 所有更精细的分类与槽位补全交给 LLM 路径或后续迭代。
+        通过关键词提取基础槽位，并检测是否需要澄清。
         """
+        # 关键词提取槽位
+        slots: Dict[str, Any] = {"raw_input": text}
+
+        # 平台提取
+        if "小红书" in text or "xhs" in text.lower():
+            slots["platform"] = "小红书"
+        elif "抖音" in text or "douyin" in text.lower():
+            slots["platform"] = "抖音"
+        elif "微信" in text:
+            slots["platform"] = "微信"
+
+        # 内容形式提取
+        if "图文" in text or "图片" in text:
+            slots["content_form"] = "图文"
+        elif "视频" in text:
+            slots["content_form"] = "视频"
+
+        # 意图类型判断
+        intent_breakdown = ["topic_planning", "content_generation"]
+        suggested_agents = ["选题策划", "内容生成", "内容评估与检验"]
+
+        if "投流" in text or "推广" in text or "广告" in text:
+            intent_type = IntentType.ADS_PLANNING.value
+            intent_breakdown = ["ads_planning"]
+            suggested_agents = ["投流"]
+        elif "选题" in text or "话题" in text:
+            intent_type = IntentType.TOPIC_PLANNING.value
+            intent_breakdown = ["topic_planning"]
+            suggested_agents = ["选题策划"]
+        elif "账号" in text and ("战略" in text or "规划" in text or "策略" in text):
+            intent_type = IntentType.ACCOUNT_STRATEGY.value
+            intent_breakdown = ["account_strategy"]
+            suggested_agents = ["账号战略"]
+        elif "笔记" in text or "内容" in text or "文案" in text:
+            intent_type = IntentType.CONTENT_GENERATION.value
+            intent_breakdown = ["content_generation"]
+            suggested_agents = ["内容生成"]
+        else:
+            intent_type = IntentType.CHAINED.value
+
         return IntentOutput(
             demand_summary=text or "用户提出了一条内容或账号相关的需求。",
-            intent_type=IntentType.CHAINED.value,
-            intent_breakdown=["topic_planning", "content_generation"],
-            slots={"raw_input": text},
-            needs_clarification=False,
-            suggested_agents=["选题策划", "内容生成", "内容评估与检验"],
+            intent_type=intent_type,
+            intent_breakdown=intent_breakdown,
+            slots=slots,
+            needs_clarification=False,  # 由 _fill_slots 统一判断
+            suggested_agents=suggested_agents,
         )
 
     # -------- 后端信息 --------

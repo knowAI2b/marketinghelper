@@ -4,12 +4,15 @@
 """
 from __future__ import annotations
 
+import asyncio
+import json
 import time
 from typing import Any
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, File, Header, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -19,6 +22,9 @@ load_dotenv()
 # 初始化日志（必须在其他模块导入前）
 from xhs_assistant.shared.logging_config import setup_logging, log_api_request, log_user_action
 setup_logging(app_level="INFO", console_level="INFO")
+
+import logging
+logger = logging.getLogger(__name__)
 
 from api.auth_db import (
     get_user_by_token,
@@ -31,7 +37,7 @@ from api.auth_db import (
 from xhs_assistant.backends import BackendManager
 from xhs_assistant.fulfillability.service import FulfillabilityService
 from xhs_assistant.intent.service import IntentService
-from xhs_assistant.planner.graph import build_workflow
+from xhs_assistant.planner.graph import build_workflow, run_workflow_with_progress
 from xhs_assistant.shared.config import config
 from xhs_assistant.agents.registry import get_registry_info
 
@@ -160,6 +166,89 @@ def post_planner_run(req: PlannerRunRequest) -> dict[str, Any]:
     }
     result = workflow.invoke(initial)
     return result
+
+
+@app.post("/planner/stream")
+async def post_planner_stream(req: PlannerRunRequest):
+    """Planner 流式服务：SSE 实时推送执行进度。
+
+    返回 Server-Sent Events 流：
+    - event: stage - 执行阶段变更
+    - event: result - 最终结果
+    - event: error - 错误
+    """
+    session_id = req.account_context.get("session_id")
+    intent_type = req.intent_output.get("intent_type", "unknown")
+    log_user_action(
+        action="planner_stream",
+        user_id=req.account_context.get("user_id"),
+        session_id=session_id,
+        details={"intent_type": intent_type},
+    )
+
+    # 使用队列实现实时推送
+    event_queue: asyncio.Queue = asyncio.Queue()
+
+    async def event_generator():
+        try:
+            while True:
+                event = await event_queue.get()
+                if event is None:  # 结束信号
+                    break
+                yield event
+        except asyncio.CancelledError:
+            pass
+
+    async def run_workflow():
+        try:
+            def on_progress(step: str, message: str, agent: str | None = None):
+                """进度回调：将事件放入队列。"""
+                event_data = json.dumps({
+                    "step": step,
+                    "message": message,
+                    "agent": agent,
+                }, ensure_ascii=False)
+                # 在异步上下文中安全地放入队列
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.call_soon_threadsafe(
+                        lambda: event_queue.put_nowait(f"event: stage\ndata: {event_data}\n\n")
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to queue progress event: {e}")
+
+            # 执行工作流
+            result = await run_workflow_with_progress(
+                intent_output=req.intent_output,
+                account_context=req.account_context,
+                on_progress=on_progress,
+                past_steps=req.past_steps,
+            )
+
+            # 发送最终结果
+            result_data = json.dumps(result, ensure_ascii=False, default=str)
+            await event_queue.put(f"event: result\ndata: {result_data}\n\n")
+
+        except Exception as e:
+            error_data = json.dumps({"error": str(e)}, ensure_ascii=False)
+            await event_queue.put(f"event: error\ndata: {error_data}\n\n")
+
+        finally:
+            # 发送结束信号
+            await event_queue.put(None)
+
+    # 启动工作流任务
+    workflow_task = asyncio.create_task(run_workflow())
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.get("/")
