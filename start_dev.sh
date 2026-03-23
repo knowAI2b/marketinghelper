@@ -2,14 +2,14 @@
 # 启动小红书助手开发服务的便捷脚本
 #
 # 可通过环境变量自定义：
-#   CONDA_ENV_NAME=py310   - conda 环境名称（默认 py310）
+#   CONDA_ENV_NAME=py313   - conda 环境名称（默认 py313）
 #   SKIP_CONDA=1           - 跳过 conda 环境激活
 #   SKIP_INSTALL=1         - 跳过依赖安装
 
 set -euo pipefail
 
 # 配置项（可通过环境变量覆盖）
-CONDA_ENV_NAME="${CONDA_ENV_NAME:-py310}"
+CONDA_ENV_NAME="${CONDA_ENV_NAME:-py313}"
 SKIP_CONDA="${SKIP_CONDA:-}"
 SKIP_INSTALL="${SKIP_INSTALL:-}"
 

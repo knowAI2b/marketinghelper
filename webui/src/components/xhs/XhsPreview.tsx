@@ -135,6 +135,12 @@ function MobileLayout({
 
   return (
     <div className="w-full">
+      {/* 标题放在最顶部 */}
+      {displayTitle && (
+        <div className="px-4 pt-4 pb-2 bg-white">
+          <h3 className="font-semibold text-gray-900 text-base leading-snug">{displayTitle}</h3>
+        </div>
+      )}
       <ImageCarousel
         images={images}
         aspectRatio="3/4"
@@ -155,9 +161,6 @@ function MobileLayout({
             {date && <p className="text-gray-400 text-xs">{date}</p>}
           </div>
         </div>
-        {displayTitle && (
-          <h3 className="font-semibold text-gray-900 mb-2 text-base leading-snug">{displayTitle}</h3>
-        )}
         <RenderMarkdown content={displayContent} />
         <div className="flex items-center gap-6 mt-4 pt-3 border-t border-gray-100">
           <div className="flex items-center gap-1.5 text-gray-500">
@@ -204,59 +207,63 @@ function PCLayout({
   const displayContent = parsed.cleanContent
 
   return (
-    <div className="flex w-full">
-      {/* 左侧图片区域 - 50% 宽度 */}
-      <div className="w-1/2">
-        <ImageCarousel
-          images={images}
-          aspectRatio="3/4"
-          showArrows={true}
-          showDots={true}
-        />
-      </div>
-
-      {/* 右侧文字区域 - 50% 宽度 */}
-      <div className="w-1/2 p-5 flex flex-col bg-white">
-        {/* 作者信息 */}
-        <div className="flex items-center gap-3 mb-4">
-          {avatar ? (
-            <img src={avatar} alt={author} className="w-10 h-10 rounded-full object-cover" />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-500 text-sm">{author.charAt(0)}</span>
-            </div>
-          )}
-          <div>
-            <p className="font-medium text-gray-900 text-sm">{author}</p>
-            {date && <p className="text-gray-400 text-xs">{date}</p>}
-          </div>
-        </div>
-
-        {/* 标题 */}
-        {displayTitle && (
-          <h3 className="font-semibold text-gray-900 mb-3 text-base leading-snug">
+    <div className="flex flex-col w-full">
+      {/* 标题放在最顶部，跨越整个卡片宽度 */}
+      {displayTitle && (
+        <div className="px-5 py-4 bg-white border-b border-gray-100">
+          <h3 className="font-semibold text-gray-900 text-lg leading-snug">
             {displayTitle}
           </h3>
-        )}
+        </div>
+      )}
 
-        {/* 正文内容 */}
-        <div className="flex-1 overflow-auto">
-          <RenderMarkdown content={displayContent} />
+      <div className="flex">
+        {/* 左侧图片区域 - 50% 宽度 */}
+        <div className="w-1/2">
+          <ImageCarousel
+            images={images}
+            aspectRatio="3/4"
+            showArrows={true}
+            showDots={true}
+          />
         </div>
 
-        {/* 互动数据 */}
-        <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-100">
-          <div className="flex items-center gap-1.5 text-gray-500">
-            <Heart size={16} />
-            <span className="text-xs">{likes}</span>
+        {/* 右侧文字区域 - 50% 宽度 */}
+        <div className="w-1/2 p-5 flex flex-col bg-white">
+          {/* 作者信息 */}
+          <div className="flex items-center gap-3 mb-4">
+            {avatar ? (
+              <img src={avatar} alt={author} className="w-10 h-10 rounded-full object-cover" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                <span className="text-gray-500 text-sm">{author.charAt(0)}</span>
+              </div>
+            )}
+            <div>
+              <p className="font-medium text-gray-900 text-sm">{author}</p>
+              {date && <p className="text-gray-400 text-xs">{date}</p>}
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 text-gray-500">
-            <MessageCircle size={16} />
-            <span className="text-xs">{comments}</span>
+
+          {/* 正文内容 */}
+          <div className="flex-1 overflow-auto">
+            <RenderMarkdown content={displayContent} />
           </div>
-          <div className="flex items-center gap-1.5 text-gray-500">
-            <Star size={16} />
-            <span className="text-xs">{collects}</span>
+
+          {/* 互动数据 */}
+          <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-1.5 text-gray-500">
+              <Heart size={16} />
+              <span className="text-xs">{likes}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-gray-500">
+              <MessageCircle size={16} />
+              <span className="text-xs">{comments}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-gray-500">
+              <Star size={16} />
+              <span className="text-xs">{collects}</span>
+            </div>
           </div>
         </div>
       </div>

@@ -27,6 +27,98 @@ async function post<T>(path: string, body: object): Promise<T> {
   return res.json() as Promise<T>
 }
 
+// SSE 事件类型
+export interface SSEStageEvent {
+  step: 'planning' | 'agent' | 'step_done' | 'complete' | 'error'
+  message: string
+  agent?: string
+}
+
+export interface SSEErrorEvent {
+  error: string
+}
+
+// SSE 回调类型
+export interface SSECallbacks {
+  onStage?: (event: SSEStageEvent) => void
+  onResult?: (result: PlannerResult) => void
+  onError?: (error: string) => void
+}
+
+export async function postPlannerStream(
+  intentOutput: IntentOutput,
+  accountContext: AccountContext = {},
+  callbacks: SSECallbacks,
+  pastSteps: unknown[] | null = null
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/planner/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      intent_output: intentOutput,
+      account_context: accountContext,
+      past_steps: pastSteps ?? undefined,
+    }),
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || `请求失败 ${res.status}`)
+  }
+
+  const reader = res.body?.getReader()
+  if (!reader) {
+    throw new Error("无法获取响应流")
+  }
+
+  const decoder = new TextDecoder()
+  let buffer = ""
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+
+      // 解析 SSE 事件
+      const lines = buffer.split("\n")
+      buffer = lines.pop() || "" // 保留最后一个不完整的行
+
+      let eventType = ""
+      let eventData = ""
+
+      for (const line of lines) {
+        if (line.startsWith("event:")) {
+          eventType = line.slice(6).trim()
+        } else if (line.startsWith("data:")) {
+          eventData = line.slice(5).trim()
+        } else if (line === "" && eventType && eventData) {
+          // 空行表示事件结束，处理事件
+          try {
+            const data = JSON.parse(eventData)
+
+            if (eventType === "stage") {
+              callbacks.onStage?.(data as SSEStageEvent)
+            } else if (eventType === "result") {
+              callbacks.onResult?.(data as PlannerResult)
+            } else if (eventType === "error") {
+              callbacks.onError?.((data as SSEErrorEvent).error)
+            }
+          } catch (e) {
+            console.warn("Failed to parse SSE event:", eventData, e)
+          }
+
+          eventType = ""
+          eventData = ""
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
+}
+
 export async function postIntent(
   userInput: string,
   accountContext: AccountContext = {}
