@@ -33,11 +33,22 @@ export interface PlanStep {
   acceptance_criteria: string
 }
 
+/** Planner step result */
+export interface StepResult {
+  agent: string
+  output: string
+  response?: string
+  step_id?: string
+  images?: string[]
+  content?: string
+}
+
 /** Planner run response */
 export interface PlannerResult {
   plan?: { steps: PlanStep[] }
-  past_steps?: Array<[PlanStep, { agent: string; output: string; step_id?: string }]>
+  past_steps?: Array<[PlanStep, StepResult]>
   response?: string
+  images?: string[]
 }
 
 export type AccountContext = Record<string, unknown>
