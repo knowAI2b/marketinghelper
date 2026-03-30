@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from xhs_assistant.agents.rag_retrieval import format_rag_context, get_rag_data_from_state
 from xhs_assistant.shared.llm import call_llm
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,9 @@ def run_topic_planning(step: dict[str, Any], state: dict[str, Any]) -> Any:
     industry = slots.get("industry", account_context.get("industry", ""))
     goal = slots.get("goal", account_context.get("goal", ""))
 
+    # 获取 RAG 数据（如果有）
+    rag_data = get_rag_data_from_state(state)
+
     # 构建用户消息
     user_message = f"""请帮我做选题策划。
 
@@ -54,8 +58,17 @@ def run_topic_planning(step: dict[str, Any], state: dict[str, Any]) -> Any:
 行业：{industry or "综合"}
 目标：{goal or "综合增长"}
 需求：{demand}
+"""
 
-请推荐 3-5 个适合的选题。"""
+    # 如果有 RAG 数据，注入到提示词中
+    if rag_data:
+        rag_context = format_rag_context(rag_data)
+        user_message += f"""
+【参考数据】
+{rag_context}
+"""
+
+    user_message += "\n请推荐 3-5 个适合的选题。"
 
     # 调用 LLM
     try:

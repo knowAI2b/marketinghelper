@@ -15,6 +15,7 @@ from xhs_assistant.agents.account_strategy import run_account_strategy
 from xhs_assistant.agents.ads_planning import run_ads_planning
 from xhs_assistant.agents.content_eval import run_content_eval
 from xhs_assistant.agents.content_generation import run_content_generation
+from xhs_assistant.agents.rag_retrieval import AGENT_RAG_RETRIEVAL, run_rag_retrieval
 from xhs_assistant.agents.topic_planning import run_topic_planning
 from xhs_assistant.shared.config import config
 
@@ -23,13 +24,21 @@ logger = logging.getLogger(__name__)
 
 AgentFn = Callable[[dict[str, Any], dict[str, Any]], Any]
 
+# Agent 名称常量
+AGENT_ACCOUNT_STRATEGY = "账号战略"
+AGENT_TOPIC_PLANNING = "选题策划"
+AGENT_CONTENT_GENERATION = "内容生成"
+AGENT_ADS_PLANNING = "投流"
+AGENT_CONTENT_EVAL = "内容评估与检验"
+
 # Agent 注册表：名称 → 执行函数
 AGENT_REGISTRY: dict[str, AgentFn] = {
-    "账号战略": run_account_strategy,
-    "选题策划": run_topic_planning,
-    "内容生成": run_content_generation,
-    "投流": run_ads_planning,
-    "内容评估与检验": run_content_eval,
+    AGENT_ACCOUNT_STRATEGY: run_account_strategy,
+    AGENT_RAG_RETRIEVAL: run_rag_retrieval,
+    AGENT_TOPIC_PLANNING: run_topic_planning,
+    AGENT_CONTENT_GENERATION: run_content_generation,
+    AGENT_ADS_PLANNING: run_ads_planning,
+    AGENT_CONTENT_EVAL: run_content_eval,
 }
 
 

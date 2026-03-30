@@ -5,6 +5,7 @@ import logging
 import uuid
 from typing import Any
 
+from xhs_assistant.agents.rag_retrieval import format_rag_context, get_rag_data_from_state
 from xhs_assistant.services.rednote import RednoteServiceError, get_rednote_client
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,9 @@ def run_content_generation(step: dict[str, Any], state: dict[str, Any]) -> Any:
     intent_output = state.get("intent_output", {})
     account_context = state.get("account_context", {})
 
+    # 获取 RAG 数据（如果有）
+    rag_data = get_rag_data_from_state(state)
+
     # 获取或创建 session_id
     # 优先使用前端传递的 session_id，确保同一对话使用相同的 ChatAgent
     session_id = account_context.get("session_id") or account_context.get("user_id") or str(uuid.uuid4())
@@ -62,7 +66,7 @@ def run_content_generation(step: dict[str, Any], state: dict[str, Any]) -> Any:
 
     # 构建提示词：直接使用用户的原始输入
     # RedNote 服务的 ChatAgent 会管理对话历史
-    prompt = _build_generation_prompt(step, intent_output, account_context)
+    prompt = _build_generation_prompt(step, intent_output, account_context, rag_data)
 
     try:
         logger.info(f"调用 RedNote 服务, session_id={session_id}, clear_history={clear_history}")
@@ -98,6 +102,7 @@ def _build_generation_prompt(
     step: dict[str, Any],
     intent_output: dict[str, Any],
     account_context: dict[str, Any],
+    rag_data: dict[str, Any] | None = None,
 ) -> str:
     """构建内容生成提示词。
 
@@ -105,6 +110,7 @@ def _build_generation_prompt(
         step: 步骤信息
         intent_output: 意图理解输出
         account_context: 账号上下文
+        rag_data: RAG 检索数据（可选）
 
     Returns:
         str: 构建好的提示词
@@ -113,15 +119,28 @@ def _build_generation_prompt(
     # ChatAgent 会管理对话历史，后续请求会自动关联之前的上下文
     demand = intent_output.get("demand_summary", "")
 
-    # 如果 demand_summary 包含"之前的对话内容"，说明是后续请求
-    # 直接使用它，让 ChatAgent 理解上下文
+    # 构建 RAG 数据注入部分
+    rag_context = ""
+    if rag_data:
+        formatted_rag = format_rag_context(rag_data, style="bracket")
+        if formatted_rag:
+            rag_context = "\n\n以下是为你准备的参考数据，请在创作时参考：\n\n" + formatted_rag
+
+    # 如果有需求描述，使用它
     if demand:
+        if rag_context:
+            return f"{demand}{rag_context}"
         return demand
 
     # 否则使用步骤描述
     step_desc = step.get("input_summary", "") or step.get("description", "")
     if step_desc:
+        if rag_context:
+            return f"{step_desc}{rag_context}"
         return step_desc
 
     # 默认请求
-    return "请生成一篇小红书笔记内容"
+    default_prompt = "请生成一篇小红书笔记内容"
+    if rag_context:
+        return f"{default_prompt}{rag_context}"
+    return default_prompt

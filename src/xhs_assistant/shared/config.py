@@ -157,11 +157,43 @@ class AgentBackendConfig:
 
 
 @dataclass
+class RagConfig:
+    """RAG 检索服务配置。
+
+    用于从 xhs_agent API 获取选题卡数据（趋势、热门话题等）。
+    """
+
+    # 服务地址（xhs_agent API，默认端口 3001）
+    service_url: str = field(
+        default_factory=lambda: _get_str("RAG_SERVICE_URL", "http://127.0.0.1:3001")
+    )
+    # 认证 API Key（可选）
+    api_key: str = field(default_factory=lambda: _get_str("RAG_API_KEY"))
+    # 是否启用
+    enabled: bool = field(default_factory=lambda: _get_bool("RAG_ENABLED", False))
+    # 请求超时（秒）
+    timeout: int = field(default_factory=lambda: _get_int("RAG_TIMEOUT", 120))
+    # 缓存 TTL（小时）
+    cache_ttl_hours: int = field(default_factory=lambda: _get_int("RAG_CACHE_TTL_HOURS", 12))
+    # 缓存目录
+    cache_dir: str = field(
+        default_factory=lambda: _get_str("RAG_CACHE_DIR", "./data/rag_cache")
+    )
+
+    def is_available(self) -> bool:
+        """检查服务是否可用（已启用且配置了服务地址）。"""
+        return self.enabled and bool(self.service_url)
+
+
+@dataclass
 class Config:
     """运行时配置；支持环境变量或配置文件。"""
 
     # RedNote 服务配置
     rednote: RednoteConfig = field(default_factory=RednoteConfig)
+
+    # RAG 服务配置
+    rag: RagConfig = field(default_factory=RagConfig)
 
     # Agent 后端配置
     agent_backend: AgentBackendConfig = field(default_factory=AgentBackendConfig)
