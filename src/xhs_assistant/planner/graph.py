@@ -15,6 +15,7 @@ from typing import Any, Callable, Literal, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
+from xhs_assistant.agents.rag_retrieval import AGENT_RAG_RETRIEVAL
 from xhs_assistant.backends import BackendManager, PlanOutputData
 from xhs_assistant.planner.schema import Plan, Step
 from xhs_assistant.shared.config import config
@@ -36,9 +37,43 @@ class GraphState(TypedDict, total=False):
     response: str
     account_context: dict[str, Any]
     backend_type: str  # 新增：记录使用的后端类型
+    rag_data: dict[str, Any]  # 新增：RAG 检索结果
 
 
 State = dict[str, Any]
+
+
+def _should_add_rag_step(intent_output: dict[str, Any]) -> bool:
+    """判断是否需要添加 RAG 检索步骤。
+
+    触发条件：
+    1. suggested_agents 包含"选题策划"或"内容生成"
+    2. slots 中有产品信息（product/category/topic）
+
+    Args:
+        intent_output: 意图识别输出
+
+    Returns:
+        bool: 是否需要添加 RAG 步骤
+    """
+    # RAG 服务未启用时不添加
+    if not config.rag.enabled:
+        return False
+
+    suggested_agents = intent_output.get("suggested_agents", [])
+    slots = intent_output.get("slots", {})
+
+    # 检查是否有需要 RAG 的 Agent
+    needs_rag_agents = "选题策划" in suggested_agents or "内容生成" in suggested_agents
+    if not needs_rag_agents:
+        return False
+
+    # 检查是否有产品信息
+    has_product_info = bool(
+        slots.get("product") or slots.get("category") or slots.get("topic")
+    )
+
+    return has_product_info
 
 
 def _make_plan_from_intent(intent_output: dict[str, Any]) -> dict[str, Any]:
@@ -51,16 +86,39 @@ def _make_plan_from_intent(intent_output: dict[str, Any]) -> dict[str, Any]:
         dict: Plan 结构
     """
     suggested = intent_output.get("suggested_agents") or ["选题策划", "内容生成", "内容评估与检验"]
-    steps = [
-        Step(
-            step_id=f"s{i+1}",
-            agent=a,
-            input_summary=f"执行 {a}",
-            depends_on=[f"s{i}"] if i > 0 else [],
-            acceptance_criteria="通过"
+
+    # 判断是否需要添加 RAG 检索步骤
+    add_rag = _should_add_rag_step(intent_output)
+
+    # 构建步骤列表
+    steps = []
+    step_idx = 0
+
+    # 如果需要 RAG，在最前面添加 RAG 检索步骤
+    if add_rag:
+        steps.append(
+            Step(
+                step_id=f"s{step_idx}",
+                agent=AGENT_RAG_RETRIEVAL,
+                input_summary="获取选题卡数据（趋势、热门话题等）",
+                depends_on=[],
+                acceptance_criteria="成功获取选题卡数据或降级跳过",
+            )
         )
-        for i, a in enumerate(suggested)
-    ]
+        step_idx += 1
+
+    # 添加原有的 Agent 步骤
+    for i, a in enumerate(suggested):
+        steps.append(
+            Step(
+                step_id=f"s{step_idx + i}",
+                agent=a,
+                input_summary=f"执行 {a}",
+                depends_on=[f"s{step_idx + i - 1}"] if i > 0 else ([f"s{step_idx - 1}"] if add_rag else []),
+                acceptance_criteria="通过",
+            )
+        )
+
     return Plan(steps=steps).model_dump()
 
 
